@@ -117,7 +117,8 @@ el parcial. Durante la misma se discutirán, con cierta generalidad, distintos a
 de implementación como experimentación.
 
 
-References
+## References
 
 [1] Berlekamp, E. R.; Conway, John Horton; Guy, R. K. (2001–2004). Winning Ways for your Mathematical
 Plays (2nd ed.). A K Peters Ltd.
+
