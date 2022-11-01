@@ -23,6 +23,9 @@
 #include <mutex>
 #include <sys/wait.h>
 #include <cassert>
+#include <iostream>
+#include <sstream>
+#include<string>
 #define PORT 5030
 #define MENSAJE_MAXIMO  256
 #define MAX_CLIENTS 10
@@ -47,9 +50,9 @@ struct client_request{
 
 // Funciones utiles sugeridas
 int read_sock(char str[], int s);
-void broadcast(vector<int>& sockets, struct request* req);
+void broadcast(vector<vector<int>> &sockets, struct request* req);
 void get_request(struct request* req, int s);
-void send_request(struct request* req, int s)
+void send_request(struct request* req, int socket);
 int set_acc_socket(int lsn_port);
-void accept_conns(int s, vector<int>& v );
-
+void accept_conns(int s, vector<int>& v, sem_t& semaforo);
+int connect_socket(int port);

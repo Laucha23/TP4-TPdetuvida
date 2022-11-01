@@ -2,98 +2,162 @@
 
 using namespace std;
 
+vector<int> vecinos;
+bool estado;
 
-// Asumiendo servidor en ip local, y dado un puerto, establece una conexion
-// con el destino retornando un socket en estado conectado en caso de exito
-int connect_socket(int port)
+
+
+void set_state(int vecinosVivos)
 {
-   // TO DO
+	if (estado && vecinosVivos < 2)
+	{
+		estado = false;
+	}
+	if (estado && (vecinosVivos == 2 || vecinosVivos == 3))
+	{
+		estado = true;
+	}
+	if (estado && vecinosVivos > 3)
+	{
+		estado = false;
+	}
+	if (!estado && vecinosVivos == 3)
+	{
+		estado = true;
+	}
 }
 
-
-// Dada una lista de puertos de vecinos, conecta el cliente con cada vecino
-// agregando cada socket al vector de sockets
-void con2neigh(string list, vector<int>& sockets)
+//Notificamos al server nuestro nuevo estado
+void notificarServer(int socketServer)
 {
-    // TO DO
+	request reqEstado;
+	strncpy(reqEstado.type, "ESTADO", 7);
+	strncpy(reqEstado.msg, estado ? "1" : "0", 2);
+	send_request(&reqEstado, socketServer);
 }
 
-// Dado el estado actual de la celula y el estado de los vecinos en una ronda
-// computa el nuevo estado de la celula segun las reglas del juego
-bool set_state(bool alive, const vector<request>& cl)
+//Aceptamos las conexiones entrantes de los vecinos
+int aceptarConexiones(sockaddr_in addr, vector<int> &socketsEscuchar, int clientSocket)
 {
-	// TO DO
+	int t = sizeof(addr);
+	for (;;)
+	{
+		int socket = accept(clientSocket, (struct sockaddr *)&addr, (socklen_t *)&t);
+		if (socket == -1)
+		{
+			perror("Error aceptando vecino");
+			exit(1);
+		}
+		socketsEscuchar.push_back(socket);
+	}
 }
 
-int run_cell(int port)
-{   
-    char                buf[MENSAJE_MAXIMO+1];
-    struct request      srv_req;
-    int                 srv_socket, accepting_socket;
-    // Definir estructuras para manejar los sockets
-    // Sugerancia: Diferenciar los canales donde la celula publica su estado
-    //             de los que usa para recibir estado de sus vecinos
-  
-    /* Conectarse al server */
-    srv_socket = connect_socket(htons(port));
-
-    /* Crear socket de escucha y permitir aceptar conexiones concurrentemente */
-    int lsn_port = /* TO DO*/ ;
-    acc_sock_fd = /* TO DO*/
-    /* TO DO*/
-  
-    /* Enviar msg al srv con el puerto de escucha */
-    /* TO DO*/
-    
-    /* Obtener lista de vecinos inicial */
-    /* TO DO*/
-
-    /* Conectarse a los vecinos */
-    /* TO DO*/ 
-
-    /* Enviar msg ready para el server */
-    /* TO DO*/
-
-    /* Comenzar juego */
-    srand(getpid());
-    char alive = random() % 2;
-    while(1)
-    {
-        // Esperar request del srv
-        get_request(&srv_req, srv_socket);
-        if (strncmp(srv_req.type,"TICK",4) == 0)
+//Cada vez que hay un tick se escucha el estado de los vecinos para setea el nuevo estado de la celula
+void escucharVecinos(vector<int> &socketsVecinos, int serverSocket)
+{
+	int vecinosVivos = 0;
+	for (int i = 0; i < socketsVecinos.size(); ++i)
+	{
+		request req;
+        get_request(&req, socketsVecinos[i]);
+		if (strncmp(req.msg, "1", 2) == 0)
         {
-            /* Publicar estado*/
-            /* TO DO*/
-
-            /* Obtener estado de los vecinos*/
-            /* TO DO*/
-
-            /* Computar nuevo estado*/
-            /* TO DO*/
-
-            /* Informar al srv nuevo estado*/
-            /* TO DO*/
+            vecinosVivos++;
         }
-        else if (strncmp(srv_req.type,"NEW",3) == 0)
-        {
-            /* Conectarse a los nuevos vecinos*/
-            /* TO DO*/
-
-            /* Avisar con CLIENT_READY al srv*/
-            /* TO DO*/
-
-        } 
-
     }
-    
-    return;
+
+	set_state(vecinosVivos);
+	notificarServer(serverSocket);
 }
 
+//El cliente envia su estado a sus vecinos 
+void notificarVecinos(vector<int> &socketsHablar)
+{
+	for (int i = 0; i < socketsHablar.size(); ++i)
+	{
+		request reqEstado;
+        strncpy(reqEstado.type, "ESTADO", 7);
+        strncpy(reqEstado.msg, estado ? "1" : "0", 2);
+        send_request(&reqEstado, socketsHablar[i]);
+	}
+}
+
+//Por cada puerto genera la conexion con sus vecinos
+void conectarVecinos(vector<int> &socketsHablar)
+{
+	for (int i = 0; i < vecinos.size(); ++i)
+	{
+		socketsHablar.push_back(connect_socket(vecinos[i]));
+	}
+}
+
+void getPuertosVecinos(string puertosVecinos, vector<int> &puertos)
+{
+	const char separador = '-';
+	stringstream ss(puertosVecinos);
+
+	string s;
+	while (std::getline(ss, s, separador))
+	{
+		if (s != "")
+		{
+			puertos.push_back(atoi(s.c_str()));
+		}
+	}
+}
 
 int main(int argc, char* argv[]){
-    int pid;
-    /* Lanzar tantos procesos celulas como los indicados por argv[1]*/
-    /* TO DO*/
+    int clientPort = atoi(argv[1]);
+    int server = connect_socket(PORT);
+    int clientSocket = set_acc_socket(clientPort);
+
+    struct sockaddr_in local;
+
+    estado = atoi(argv[1]) % 2 == 0;
     
+    //Envia su puerto al servidor
+	request reqPuerto;
+	strncpy(reqPuerto.type, "PORT", 5);
+	strncpy(reqPuerto.msg, to_string(clientPort).c_str(),5);
+	send_request(&reqPuerto, server);
+
+    //Envia su estado al servidor
+	request reqEstado;
+	strncpy(reqEstado.type, "ESTADO", 7);
+	strncpy(reqEstado.msg, estado ? "1" : "0", 2);
+	send_request(&reqEstado, server);
+
+
+
+	vector<thread> threads;
+
+	vector<int> socketsHablar;
+	vector<int> socketsEscuchar;
+
+    while (1)
+	{
+		int socket;
+		request reqInfo;
+		get_request(&reqInfo, server);
+		if (strncmp(reqInfo.type, "VECINOS", 8) == 0)
+		{
+			getPuertosVecinos(string(reqInfo.msg), vecinos);
+			threads.push_back(thread(conectarVecinos, ref(socketsHablar)));
+			threads.push_back(thread(aceptarConexiones, local, ref(socketsEscuchar), clientSocket));
+		}
+
+		if (strncmp(reqInfo.type, "TICK", 5) == 0)
+		{
+			threads.push_back(thread(notificarVecinos, ref(socketsHablar)));
+			threads.push_back(thread(escucharVecinos, ref(socketsEscuchar), server));
+		}
+	}
+
+	for (unsigned int i = 0; i < threads.size(); i++)
+	{
+		threads[i].join();
+	}
+
+	return 0;
+
 }

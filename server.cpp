@@ -5,69 +5,154 @@ using namespace std;
 // compartir variables y que por lo tanto las herramientas de sincronziacion
 // como semaforos son perfectamente validas.
 
+vector<vector<int>> ubicacionesVecinos{vector<int>{1, 1},
+vector<int>{0, 1},
+vector<int>{-1, 1},
+vector<int>{1, -1},
+vector<int>{1, 0},
+vector<int>{-1, 0},
+vector<int>{0, -1},
+vector<int>{-1, -1}};
+
 
 // Servicio draw: En cada tick, imprime el mapa con el estado de cada celula 
-void draw()
+void draw(vector<vector<int>> &matrix)
 {
-    /* TO DO*/
+    cout << "Tablero : " << endl;
+    string tablero = "";
+	for (size_t i = 0; i < 3; i++)
+    {
+		tablero+= "\n";
+        for (size_t j = 0; j < 3; j++)
+        {
+			request reqEstado;
+            get_request(&reqEstado, matrix[i][j]);
+			tablero+= " ";
+			tablero+= reqEstado.msg;
+			tablero+= " ";
+        }   
+        tablero+= "\n";
+    }
 }
 
 // Servicio timer: Cada cierto intervalo de tiempo publica un tick. 
 //Es importante que cada tick se envie utilizando el mapa de vecinos actualizado
 
-void timer()
+void timer(vector<vector<int>> &matrix)
 {
-   /* TO DO*/
+    int contador = 0;
+    cout << "Comienza el juego" << endl;
+
+	while (1)
+	{
+		draw(ref(matrix));
+		string tick = "Tiempo " + to_string(contador);
+		char tiempo[tick.length() + 1];
+		strcpy(tiempo, tick.c_str());
+		request req;
+		strncpy(req.msg, tiempo, sizeof(tiempo));
+		strncpy(req.type, "TICK", 5);
+		broadcast(matrix, &req);
+		contador++;
+		sleep(2);
+	}
+}
+
+void mandarVecinos(vector<vector<int>> &matrix, vector<vector<int>> &puertos)
+{
+	for (size_t i = 0; i < 3; i++)
+	{
+		for (size_t j = 0; j < 3; j++)
+		{
+            //Se calcula las posiciones de los vecinos de cada casilla
+            vector<vector<int>> vecinosUbi;
+            for(size_t i = 0; i < 8; i++){
+                int xVecino = i + ubicacionesVecinos[i][0];
+                int yVecino = j + ubicacionesVecinos[i][1];
+                if (xVecino > -1 && yVecino > -1 && xVecino < 3 && yVecino < 3)
+                {
+                    vecinosUbi.push_back(vector<int>{xVecino, yVecino});
+                }
+            }
+            //Se genera un string con los puertos de los clientes vecinos
+            string vecinosString = "";
+            for (int i = 0; i < vecinosUbi.size(); ++i)
+            {
+                vecinosString += "puerto";
+                vecinosString += to_string(puertos[vecinosUbi[i][0]][vecinosUbi[i][1]]);
+            }
+            //Se envia la info a cada cliente
+			request req;
+			strncpy(req.type, "VECINOS", 8);
+			strncpy(req.msg, vecinosString.c_str(), MENSAJE_MAXIMO);
+			send_request(&req, matrix[i][j]);
+		}
+	}
 }
 
 
-
-// Thread map_creator: Agrega los nuevos nodos al mapa
-void map_creator(/* TO DO*/)
+void server_accept_conns(int s, vector<int>& sockets, vector<vector<int>> &matrix, sem_t& semaforo)
 {
-  
-    /* Registrar los lsn ports de los nuevos */
-    /* TIP: Hay que esperar que los clientes manden el mensaje con el lsn port*/
-    /* Varias formas de hacerlo, pselect puede resultar comodo para este caso */
-    /* Crear threads podria ser demasiado overhead, pero es valido */
-    /* TO DO*/
-
-    // Avisar a las celulas que correspondan la nueva estructura de vecinos
-    // TIP: Puede ser util separar el caso inicial del resto, sobre todo para
-    //      facilitar luego el testeo
-    if(N ==3){
-        base_case_3x3(/* TO DO*/);
-        return;
-    }
-    general_case_nxn(/* TO DO*/);
-
-}
-
-void server_accept_conns(int s)
-{
-    while(1)
-    {
-        /* Acpetar nueva celula*/
-        /* TO DO*/
-        
-        /* Si ya hay suficientes para armar matriz de 3x3 o para agregar L*/
-        /* Actualizar el mapa permitiendo que sigan llegando conexiones */
-        /* Sugerencia: Lanzar thread pmap_creator
-
-        /* Si no, marcarlas como pendientes y continuar*/
-        /* TO DO*/   
-
+	for (size_t i = 0; i < 3;i++)
+	{
+        for (size_t j = 0; j < 3;j++)
+        {
+            accept_conns(s, ref(sockets), semaforo);
+        }
+	}  
+    if(sockets.size() == 9){
+        int contador = 0;
+        for (size_t i = 0; i < 3;i++)
+        {
+            for (size_t j = 0; j < 3;j++)
+            {
+                matrix[i][j] = sockets[contador];
+                contador++;
+            }
+        }  
     }
 }
 
 int main(int argc, char* argv[])
 {
     int s;
-    thread ths[MAX_CLIENTS];
-    s = set_acc_socket(atoi(argv[1]));
+    vector<thread> threads;
+	vector<int> sockets;
+	vector<vector<int>> matrix(3, vector<int>(3));
+	vector<vector<int>> puertos(3, vector<int>(3));
 
-    /* Levantar servicios y aceptar conexiones */
-   /* TO DO*/
+    sem_t semaforo;
+	sem_init(&semaforo, 0, 0);
+
+    s = set_acc_socket(PORT);
+
+    threads.push_back(thread(server_accept_conns, s, ref(sockets), ref(matrix), ref(semaforo)));
+
+   if(matrix.size() == 9){
+        for (size_t i = 0; i < 3; i++)
+        {
+            for (size_t j = 0; j < 3; j++)
+            {
+                request req;
+                get_request(&req, matrix[i][j]);
+                char puerto[sizeof(req.msg)];
+                strncpy(puerto, req.msg, sizeof(req.msg));
+                puertos[i][j] = atoi(puerto);
+
+            }
+        }
+
+        mandarVecinos(ref(matrix), ref(puertos));
+
+        threads.push_back(thread(timer,ref(matrix)));
+   }
+
+    for (unsigned int i = 0; i < threads.size(); i++)
+    {
+        threads[i].join();
+    }
+
+    close(s);
 
     return 0;
 }
