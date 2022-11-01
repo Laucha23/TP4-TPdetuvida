@@ -1,3 +1,9 @@
+## Observaciones
+
+...
+
+# Enunciado
+
 ## 1 Introducción
 
 En 1970 el matemático John Horton Conway propuso el célebre "juego de la vida" que consiste en una serie
