@@ -5,98 +5,93 @@ using namespace std;
 vector<int> vecinos;
 bool estado;
 
-
-void set_state(int vecinosVivos)
+void cambiarEstado(int vecinosVivos)
 {
-	if (estado && vecinosVivos < 2)
-	{
+	if (estado && vecinosVivos < 2){
 		estado = false;
 	}
-	if (estado && (vecinosVivos == 2 || vecinosVivos == 3))
-	{
+	if (estado && (vecinosVivos == 2 || vecinosVivos == 3)){
 		estado = true;
 	}
-	if (estado && vecinosVivos > 3)
-	{
+	if (!estado && vecinosVivos == 3){
+		estado = true;
+	}
+	if (estado && vecinosVivos > 3){
 		estado = false;
-	}
-	if (!estado && vecinosVivos == 3)
-	{
-		estado = true;
 	}
 }
 
-//Notificamos al server nuestro nuevo estado
-void notificarServer(int socketServer)
+// Se notifica al servidor con el nuevo estado
+void notificarSV(int socketServer)
 {
-	request reqEstado;
-	strncpy(reqEstado.type, "ESTADO", 7);
-	strncpy(reqEstado.msg, estado ? "1" : "0", 2);
-	send_request(&reqEstado, socketServer);
+	request requestEstado;
+	strncpy(requestEstado.type, "ESTADO", 7);
+	strncpy(requestEstado.msg, estado ? "1" : "0", 2);
+	send_request(&requestEstado, socketServer);
 }
 
-//Aceptamos las conexiones entrantes de los vecinos
-int aceptarConexiones(sockaddr_in addr, vector<int> &socketsEscuchar, int clientSocket)
+// Se aceptan las conexiones pendientes de los vecinos
+int aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket, int clienteSocket)
 {
-	int t = sizeof(addr);
+	int t = sizeof(address);
 	for (;;)
 	{
-		int socket = accept(clientSocket, (struct sockaddr *)&addr, (socklen_t *)&t);
+		int socket = accept(clienteSocket, (struct sockaddr *)&address, (socklen_t *)&t);
 		if (socket == -1)
 		{
-			perror("Error aceptando vecino");
+			perror("ERROR: conexión no aceptada");
 			exit(1);
 		}
-		socketsEscuchar.push_back(socket);
+		escucharSocket.push_back(socket);
 	}
 }
 
-//Cada vez que hay un tick se escucha el estado de los vecinos para setea el nuevo estado de la celula
+// Se escucha el estado de los vecinos por cada tick
 void escucharVecinos(vector<int> &socketsVecinos, int serverSocket)
 {
 	int vecinosVivos = 0;
 	for (int i = 0; i < socketsVecinos.size(); ++i)
 	{
-		request req;
-        get_request(&req, socketsVecinos[i]);
-		if (strncmp(req.msg, "1", 2) == 0)
+		request request;
+        get_request(&request, socketsVecinos[i]);
+		if (strncmp(request.msg, "1", 2) == 0)
         {
             vecinosVivos++;
         }
     }
 
-	set_state(vecinosVivos);
-	notificarServer(serverSocket);
+	cambiarEstado(vecinosVivos);
+	notificarSV(serverSocket);
 }
 
-//El cliente envia su estado a sus vecinos 
-void notificarVecinos(vector<int> &socketsHablar)
+// Cliente envia su estado a vecinos
+void notificarVecinos(vector<int> &hablarSocket)
 {
-	for (int i = 0; i < socketsHablar.size(); ++i)
+	for (int i = 0; i < hablarSocket.size(); ++i)
 	{
-		request reqEstado;
-        strncpy(reqEstado.type, "ESTADO", 7);
-        strncpy(reqEstado.msg, estado ? "1" : "0", 2);
-        send_request(&reqEstado, socketsHablar[i]);
+		request requestEstado;
+        strncpy(requestEstado.type, "ESTADO", 7);
+        strncpy(requestEstado.msg, estado ? "1" : "0", 2);
+        send_request(&requestEstado, hablarSocket[i]);
 	}
 }
 
-//Por cada puerto genera la conexion con sus vecinos
-void conectarVecinos(vector<int> &socketsHablar)
+// Se genera la conexión por cada puerto, con sus vecinos
+void conectarVecinos(vector<int> &hablarSocket)
 {
 	for (int i = 0; i < vecinos.size(); ++i)
 	{
-		socketsHablar.push_back(connect_socket(vecinos[i]));
+		hablarSocket.push_back(conectarSocket(vecinos[i]));
 	}
 }
 
 void getPuertosVecinos(string puertosVecinos, vector<int> &puertos)
 {
 	const char separador = '-';
-	stringstream ss(puertosVecinos);
+	stringstream stringstream(puertosVecinos);
 
 	string s;
-	while (std::getline(ss, s, separador))
+	while (std::getline(stringstream, s, separador))
 	{
 		if (s != "")
 		{
@@ -106,57 +101,53 @@ void getPuertosVecinos(string puertosVecinos, vector<int> &puertos)
 }
 
 int main(int argc, char* argv[]){
-    int clientPort = atoi(argv[1]);
-    int server = connect_socket(PORT);
-    int clientSocket = set_acc_socket(clientPort);
+    int clientePort = atoi(argv[1]);
+    int server = conectarSocket(PORT);
+    int clienteSocket = set_acc_socket(clientePort);
 
     struct sockaddr_in local;
 
     estado = atoi(argv[1]) % 2 == 0;
     
-    //Envia su puerto al servidor
-	request reqPuerto;
-	strncpy(reqPuerto.type, "PORT", 5);
-	strncpy(reqPuerto.msg, to_string(clientPort).c_str(),5);
-	send_request(&reqPuerto, server);
+    // Enviar puerto al servidor
+	request requestPuerto;
+	strncpy(requestPuerto.type, "PORT", 5);
+	strncpy(requestPuerto.msg, to_string(clientePort).c_str(),5);
+	send_request(&requestPuerto, server);
 
-    //Envia su estado al servidor
-	request reqEstado;
-	strncpy(reqEstado.type, "ESTADO", 7);
-	strncpy(reqEstado.msg, estado ? "1" : "0", 2);
-	send_request(&reqEstado, server);
-
+    // Enviar estado al servidor
+	request requestEstado;
+	strncpy(requestEstado.type, "ESTADO", 7);
+	strncpy(requestEstado.msg, estado ? "1" : "0", 2);
+	send_request(&requestEstado, server);
 
 
 	vector<thread> threads;
+	vector<int> hablarSocket;
+	vector<int> escucharSocket;
 
-	vector<int> socketsHablar;
-	vector<int> socketsEscuchar;
 
     while (1)
 	{
 		int socket;
-		request reqInfo;
-		get_request(&reqInfo, server);
-		if (strncmp(reqInfo.type, "VECINOS", 8) == 0)
+		request requestInfo;
+		get_request(&requestInfo, server);
+		if (strncmp(requestInfo.type, "VECINOS", 8) == 0)
 		{
-			getPuertosVecinos(string(reqInfo.msg), vecinos);
-			threads.push_back(thread(conectarVecinos, ref(socketsHablar)));
-			threads.push_back(thread(aceptarConexiones, local, ref(socketsEscuchar), clientSocket));
+			getPuertosVecinos(string(requestInfo.msg), vecinos);
+			threads.push_back(thread(conectarVecinos, ref(hablarSocket)));
+			threads.push_back(thread(aceptarConexiones, local, ref(escucharSocket), clienteSocket));
 		}
-
-		if (strncmp(reqInfo.type, "TICK", 5) == 0)
+		if (strncmp(requestInfo.type, "TICK", 5) == 0)
 		{
-			threads.push_back(thread(notificarVecinos, ref(socketsHablar)));
-			threads.push_back(thread(escucharVecinos, ref(socketsEscuchar), server));
+			threads.push_back(thread(notificarVecinos, ref(hablarSocket)));
+			threads.push_back(thread(escucharVecinos, ref(escucharSocket), server));
 		}
 	}
 
-	for (unsigned int i = 0; i < threads.size(); i++)
-	{
+	for (unsigned int i = 0; i < threads.size(); i++){
 		threads[i].join();
 	}
 
 	return 0;
-
 }

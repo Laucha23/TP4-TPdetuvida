@@ -10,10 +10,11 @@ int read_sock(char str[], int s)
 
     if (n == 0) 
         return -1;
-    if (n < 0) { 
+    if (n < 0){ 
         perror("recibiendo");
         exit(1);
     }
+    
     str[n] = '\0';
     printf("%d\n",n);
     printf("recibi: %s\n",str);
@@ -23,37 +24,35 @@ int read_sock(char str[], int s)
 
 // Dado un puntero a un request req y un socket s, recibe una request en s y la 
 // almacena en req. La funcion es bloqueante
-void get_request(struct request* req, int s)
+void get_request(struct request* request, int s)
 {
    char request[MENSAJE_MAXIMO + 10];
     int n = recv(s, request, MENSAJE_MAXIMO + 10, 0);
     if (n < 0) { 
-    	perror("Error recibiendo");
+    	perror("ERROR: recibiendo");
     }
-    strncpy(req->type,((struct request*)request)->type, 10);
-    strncpy(req->msg, ((struct request*)request)->msg, MENSAJE_MAXIMO); 
+    strncpy(request->type,((struct request*)request)->type, 10);
+    strncpy(request->msg, ((struct request*)request)->msg, MENSAJE_MAXIMO); 
 }
 
-void send_request(struct request* req, int socket)
+void send_request(struct request* request, int socket)
 {
-	int s = send(socket, (char *) req , MENSAJE_MAXIMO + 10, 0);
+	int s = send(socket, (char *) request , MENSAJE_MAXIMO + 10, 0);
 	if (s < 0) { 
-		perror("Error enviando");
+		perror("ERROR: enviando");
 	}
-	
 }
 
 // Dado un vector de enteros que representan socket descriptors y un request,
 // envía a traves de todos los sockets la request.
-void broadcast(vector<vector<int>> &sockets, struct request* req)
+void broadcast(vector<vector<int>> &sockets, struct request* request)
 {
     for (size_t i = 0; i < sockets.size(); i++)
 	{
 		for (size_t j = 0; j < sockets.size(); j++)
 		{
-			send_request(req, sockets[i][j]);
+			send_request(request, sockets[i][j]);
 		}
-		
 	}  
 }
 
@@ -66,13 +65,13 @@ void accept_conns(int s, vector<int>& v, sem_t& semaforo)
 	int socket;
     if ((socket = accept(s, (struct sockaddr *)&remote, (socklen_t *)&t)) == -1)
     {
-        perror("Error aceptando cliente");
+        perror("ERROR: aceptando cliente");
         exit(1);
     }
     v.push_back(socket);
-    sem_post(&semaforo);
-        
+    sem_post(&semaforo);  
 }
+
 // Dado un puerto lsn_port devuelve un socket en estado listen asociado
 // a todas las interfaces de red local y a ese puerto (ej 127.0.0.1:lsn_port)
 int set_acc_socket(int lsn_port)
@@ -80,7 +79,7 @@ int set_acc_socket(int lsn_port)
     struct sockaddr_in local;
     int s = socket(PF_INET, SOCK_STREAM, 0);
     if (s == -1) {
-        perror("Error socket server");
+        perror("ERROR: socket server");
         exit(1);
     }
 
@@ -88,30 +87,30 @@ int set_acc_socket(int lsn_port)
     local.sin_port = htons(lsn_port);
     local.sin_addr.s_addr = INADDR_ANY;
 
-
     int localLink = bind(s, (struct sockaddr *)&local, sizeof(local));
     if (localLink < 0) {
-        perror("Error bind server");
+        perror("ERROR: bind server");
         exit(1);
     }
 
     int listenMode = listen(s, 10);
     if (listenMode == -1) {
-        perror("Error listen server");
+        perror("ERROR: listen server");
         exit(1);
     }
 
     return s;
 }
 
-int connect_socket(int port)
+// 
+int conectarSocket(int port)
 {
     struct sockaddr_in remote;
     
-    int connectSocket = socket(PF_INET, SOCK_STREAM, 0);
-	if (connectSocket  == -1)
+    int conectarSocket = socket(PF_INET, SOCK_STREAM, 0);
+	if (conectarSocket  == -1)
 	{
-		perror("Error creando socket server");
+		perror("ERROR: creación de socket server");
 		exit(1);
 	}
 
@@ -119,11 +118,11 @@ int connect_socket(int port)
 	remote.sin_port = htons(PORT);
 	inet_pton(AF_INET, "127.0.0.1", &(remote.sin_addr));
 
-	int s = connect(connectSocket, (struct sockaddr *)&remote, sizeof(remote));
+	int s = conectar(conectarSocket, (struct sockaddr *)&remote, sizeof(remote));
 	if (s == -1)
 	{
-		perror("Error conectandose server");
+		perror("ERROR: conexión a server");
 		exit(1);
 	}
-    return connectSocket;
+    return conectarSocket;
 }
