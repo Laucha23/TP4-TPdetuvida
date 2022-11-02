@@ -6,12 +6,12 @@ bool vivo;
 
 
 // Se notifica al servidor con el nuevo estado
-void notificarSV(int socketServer)
+void notiServer(int serverSockets)
 {
 	request requestEstado;
 	strncpy(requestEstado.type, "ESTADO", 7);
 	strncpy(requestEstado.msg, vivo ? "1" : "0", 2);
-	send_request(&requestEstado, socketServer);
+	send_request(&requestEstado, serverSockets);
 }
 
 void cambiarEstado(int vecinosVivos)
@@ -35,7 +35,7 @@ void cambiarEstado(int vecinosVivos)
 void aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket, int clienteSocket)
 {
 	int t = sizeof(address);
-	for (int i = 0; i < 9; ++i)
+	for (;;)
 	{
 		int socket = accept(clienteSocket, (struct sockaddr *)&address, (socklen_t *)&t);
 		if (socket == -1)
@@ -63,7 +63,7 @@ void escucharVecinos(vector<int> &socketsVecinos, int serverSocket)
     }
 
 	cambiarEstado(vecinosVivos);
-	notificarSV(serverSocket);
+	notiServer(serverSocket);
 }
 
 // Cliente envia su estado a vecinos

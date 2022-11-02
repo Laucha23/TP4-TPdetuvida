@@ -2,7 +2,7 @@
 
 // Llamada al cliente con un numero random
 void client(int random){
-    std::string command = "./client";
+    std::string command = "./client ";
     command += std::to_string(random);
     system(command.c_str());
 }
