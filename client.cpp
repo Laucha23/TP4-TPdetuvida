@@ -1,5 +1,4 @@
 #include "header.h"
-
 using namespace std;
 
 vector<int> vecinos;
