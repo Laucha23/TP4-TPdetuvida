@@ -6,7 +6,6 @@ vector<int> vecinos;
 bool estado;
 
 
-
 void set_state(int vecinosVivos)
 {
 	if (estado && vecinosVivos < 2)
