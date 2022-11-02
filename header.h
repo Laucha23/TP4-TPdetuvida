@@ -26,7 +26,7 @@
 #include <iostream>
 #include <sstream>
 #include<string>
-#define PORT 5031
+#define PORT 5032
 #define MENSAJE_MAXIMO  256
 #define MAX_CLIENTS 10
 #define CLIENT_READY "CL_OK\n"

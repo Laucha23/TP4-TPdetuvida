@@ -3,6 +3,7 @@ using namespace std;
 
 vector<int> vecinos;
 bool vivo;
+int clienteSocket;
 
 
 // Se notifica al servidor con el nuevo estado
@@ -32,7 +33,7 @@ void cambiarEstado(int vecinosVivos)
 }
 
 // Se aceptan las conexiones pendientes de los vecinos
-void aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket, int clienteSocket)
+void aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket)
 {
 	int t = sizeof(address);
 	for (;;)
@@ -108,7 +109,28 @@ int main(int argc, char* argv[]){
 
     int clientePort = atoi(argv[1]);
     int server = conectarSocket(PORT);
-    int clienteSocket = set_acc_socket(clientePort, local);
+
+	int clienteSocket = socket(PF_INET, SOCK_STREAM, 0);
+    if (clienteSocket == -1) {
+        perror("ERROR: socket server");
+        exit(1);
+    }
+
+    local.sin_family = AF_INET;
+    local.sin_port = htons(clientePort);
+    local.sin_addr.s_addr = INADDR_ANY;
+
+    int localLink = bind(clienteSocket, (struct sockaddr *)&local, sizeof(local));
+    if (localLink < 0) {
+        perror("ERROR: bind");
+        exit(1);
+    }
+
+    int listenMode = listen(clienteSocket, 10);
+    if (listenMode == -1) {
+        perror("ERROR: listen server");
+        exit(1);
+    }
 
     vivo = atoi(argv[1]) % 2 == 0;
     
@@ -135,17 +157,17 @@ int main(int argc, char* argv[]){
 		int socket;
 		request requestInfo;
 		get_request(&requestInfo, server);
-		if (strncmp(requestInfo.type, "VECINOS", 8) == 0)
-		{
-			getPuertosVecinos(string(requestInfo.msg), vecinos);
-			threads.push_back(thread(conectarVecinos, ref(hablarSocket)));
-			threads.push_back(thread(aceptarConexiones, local, ref(escucharSocket), clienteSocket));
-
-		}
 		if (strncmp(requestInfo.type, "TICK", 5) == 0)
 		{
 			threads.push_back(thread(notificarVecinos, ref(hablarSocket)));
 			threads.push_back(thread(escucharVecinos, ref(escucharSocket), server));
+		}
+		if (strncmp(requestInfo.type, "VECINOS", 8) == 0)
+		{
+			getPuertosVecinos(string(requestInfo.msg), vecinos);
+			threads.push_back(thread(conectarVecinos, ref(hablarSocket)));
+			threads.push_back(thread(aceptarConexiones, local, ref(escucharSocket)));
+
 		}
 	}
 

@@ -41,7 +41,7 @@ void draw(vector<vector<int>> &matrix)
 void timer(vector<vector<int>> &matrix)
 {
     int contador = 0;
-    cout << "Comienza el juego" << endl;
+    cout << "Inicio del juego" << endl;
 
 	while (1)
 	{
@@ -118,8 +118,6 @@ int main(int argc, char* argv[])
 
     s = set_acc_socket(PORT, local);
 
-    cout << "Comenzo la conexion con clientes" << endl;
-
     threads.push_back(thread(server_accept_conns, s, ref(sockets), ref(semaforo)));
 
     for (size_t i = 0;  i < 9; i++)
@@ -127,7 +125,6 @@ int main(int argc, char* argv[])
 		sem_wait(&semaforo);
 	}
 
-    cout << "Termino la conexion con clientes" << endl;
 
     sleep(5);
 
@@ -142,7 +139,6 @@ int main(int argc, char* argv[])
             }
         }  
 
-        cout << "Entro" << endl;
         for (size_t i = 0; i < 3; i++)
         {
             for (size_t j = 0; j < 3; j++)

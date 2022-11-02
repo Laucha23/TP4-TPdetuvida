@@ -13,7 +13,7 @@ int main(int argc, char const *argv[])
 
     srand(time(NULL));
 
-    int max = 4000;
+    int max = 7000;
     int min = 1000;
 
     // Creación de los clientes minimos para iniciar el juego
