@@ -26,13 +26,13 @@ int read_sock(char str[], int s)
 // almacena en req. La funcion es bloqueante
 void get_request(struct request* request, int s)
 {
-   char request[MENSAJE_MAXIMO + 10];
-    int n = recv(s, request, MENSAJE_MAXIMO + 10, 0);
+    char req[MENSAJE_MAXIMO + 10];
+    int n = recv(s, req, MENSAJE_MAXIMO + 10, 0);
     if (n < 0) { 
     	perror("ERROR: recibiendo");
     }
-    strncpy(request->type,((struct request*)request)->type, 10);
-    strncpy(request->msg, ((struct request*)request)->msg, MENSAJE_MAXIMO); 
+    strncpy(request->type,((struct request*)req)->type, 10);
+    strncpy(request->msg, ((struct request*)req)->msg, MENSAJE_MAXIMO); 
 }
 
 void send_request(struct request* request, int socket)
@@ -68,15 +68,16 @@ void accept_conns(int s, vector<int>& v, sem_t& semaforo)
         perror("ERROR: aceptando cliente");
         exit(1);
     }
+    cout << "New socket" << endl;
+    cout << socket << endl;
     v.push_back(socket);
     sem_post(&semaforo);  
 }
 
 // Dado un puerto lsn_port devuelve un socket en estado listen asociado
 // a todas las interfaces de red local y a ese puerto (ej 127.0.0.1:lsn_port)
-int set_acc_socket(int lsn_port)
+int set_acc_socket(int lsn_port, sockaddr_in& local)
 {
-    struct sockaddr_in local;
     int s = socket(PF_INET, SOCK_STREAM, 0);
     if (s == -1) {
         perror("ERROR: socket server");
@@ -116,9 +117,9 @@ int conectarSocket(int port)
 
 	remote.sin_family = AF_INET;
 	remote.sin_port = htons(PORT);
-	inet_pton(AF_INET, "127.0.0.1", &(remote.sin_addr));
+	remote.sin_addr.s_addr = INADDR_ANY;
 
-	int s = conectar(conectarSocket, (struct sockaddr *)&remote, sizeof(remote));
+	int s = connect(conectarSocket, (struct sockaddr *)&remote, sizeof(remote));
 	if (s == -1)
 	{
 		perror("ERROR: conexión a server");

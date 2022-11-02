@@ -3,38 +3,40 @@
 using namespace std;
 
 vector<int> vecinos;
-bool estado;
+bool vivo;
 
-void cambiarEstado(int vecinosVivos)
-{
-	if (estado && vecinosVivos < 2){
-		estado = false;
-	}
-	if (estado && (vecinosVivos == 2 || vecinosVivos == 3)){
-		estado = true;
-	}
-	if (!estado && vecinosVivos == 3){
-		estado = true;
-	}
-	if (estado && vecinosVivos > 3){
-		estado = false;
-	}
-}
 
 // Se notifica al servidor con el nuevo estado
 void notificarSV(int socketServer)
 {
 	request requestEstado;
 	strncpy(requestEstado.type, "ESTADO", 7);
-	strncpy(requestEstado.msg, estado ? "1" : "0", 2);
+	strncpy(requestEstado.msg, vivo ? "1" : "0", 2);
 	send_request(&requestEstado, socketServer);
 }
 
+void cambiarEstado(int vecinosVivos)
+{
+	cout << vecinosVivos << endl;
+	if (vivo && (vecinosVivos == 2 || vecinosVivos == 3)){
+		vivo = true;
+	}
+	if (!vivo && vecinosVivos == 3){
+		vivo = true;
+	}
+	if (vivo && vecinosVivos > 3){
+		vivo = false;
+	}
+	if (vivo && vecinosVivos < 2){
+		vivo = false;
+	}
+}
+
 // Se aceptan las conexiones pendientes de los vecinos
-int aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket, int clienteSocket)
+void aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket, int clienteSocket)
 {
 	int t = sizeof(address);
-	for (;;)
+	for (int i = 0; i < 9; ++i)
 	{
 		int socket = accept(clienteSocket, (struct sockaddr *)&address, (socklen_t *)&t);
 		if (socket == -1)
@@ -43,6 +45,7 @@ int aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket, int clie
 			exit(1);
 		}
 		escucharSocket.push_back(socket);
+		cout << socket << endl;
 	}
 }
 
@@ -71,7 +74,7 @@ void notificarVecinos(vector<int> &hablarSocket)
 	{
 		request requestEstado;
         strncpy(requestEstado.type, "ESTADO", 7);
-        strncpy(requestEstado.msg, estado ? "1" : "0", 2);
+        strncpy(requestEstado.msg, vivo ? "1" : "0", 2);
         send_request(&requestEstado, hablarSocket[i]);
 	}
 }
@@ -81,17 +84,18 @@ void conectarVecinos(vector<int> &hablarSocket)
 {
 	for (int i = 0; i < vecinos.size(); ++i)
 	{
-		hablarSocket.push_back(conectarSocket(vecinos[i]));
+		int socket = conectarSocket(vecinos[i]);
+		hablarSocket.push_back(socket);
 	}
 }
 
 void getPuertosVecinos(string puertosVecinos, vector<int> &puertos)
 {
-	const char separador = '-';
 	stringstream stringstream(puertosVecinos);
 
 	string s;
-	while (std::getline(stringstream, s, separador))
+
+	while (std::getline(stringstream, s, 'p'))
 	{
 		if (s != "")
 		{
@@ -101,13 +105,13 @@ void getPuertosVecinos(string puertosVecinos, vector<int> &puertos)
 }
 
 int main(int argc, char* argv[]){
+	struct sockaddr_in local;
+
     int clientePort = atoi(argv[1]);
     int server = conectarSocket(PORT);
-    int clienteSocket = set_acc_socket(clientePort);
+    int clienteSocket = set_acc_socket(clientePort, local);
 
-    struct sockaddr_in local;
-
-    estado = atoi(argv[1]) % 2 == 0;
+    vivo = atoi(argv[1]) % 2 == 0;
     
     // Enviar puerto al servidor
 	request requestPuerto;
@@ -118,7 +122,7 @@ int main(int argc, char* argv[]){
     // Enviar estado al servidor
 	request requestEstado;
 	strncpy(requestEstado.type, "ESTADO", 7);
-	strncpy(requestEstado.msg, estado ? "1" : "0", 2);
+	strncpy(requestEstado.msg, vivo ? "1" : "0", 2);
 	send_request(&requestEstado, server);
 
 
@@ -137,6 +141,7 @@ int main(int argc, char* argv[]){
 			getPuertosVecinos(string(requestInfo.msg), vecinos);
 			threads.push_back(thread(conectarVecinos, ref(hablarSocket)));
 			threads.push_back(thread(aceptarConexiones, local, ref(escucharSocket), clienteSocket));
+
 		}
 		if (strncmp(requestInfo.type, "TICK", 5) == 0)
 		{

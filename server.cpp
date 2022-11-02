@@ -32,6 +32,7 @@ void draw(vector<vector<int>> &matrix)
         }   
         tablero += "\n";
     }
+    cout << tablero << endl;
 }
 
 
@@ -53,7 +54,7 @@ void timer(vector<vector<int>> &matrix)
 		strncpy(request.type, "TICK", 5);
 		broadcast(matrix, &request);
 		contador++;
-		sleep(2);
+		sleep(4);
 	}
 }
 
@@ -66,9 +67,9 @@ void mandarVecinos(vector<vector<int>> &matrix, vector<vector<int>> &puertos)
 		{
             //Se calcula las posiciones de los vecinos de cada casilla
             vector<vector<int>> vecinosUbicacion;
-            for(size_t i = 0; i < 8; i++){
-                int xVecino = i + ubicacionesVecinos[i][0];
-                int yVecino = j + ubicacionesVecinos[i][1];
+            for(size_t x = 0; x < 8; x++){
+                int xVecino = i + ubicacionesVecinos[x][0];
+                int yVecino = j + ubicacionesVecinos[x][1];
                 if (xVecino > -1 && yVecino > -1 && xVecino < 3 && yVecino < 3)
                 {
                     vecinosUbicacion.push_back(vector<int>{xVecino, yVecino});
@@ -76,10 +77,10 @@ void mandarVecinos(vector<vector<int>> &matrix, vector<vector<int>> &puertos)
             }
             //Se genera un string con los puertos de los clientes vecinos
             string vecinosString = "";
-            for (int i = 0; i < vecinosUbicacion.size(); ++i)
+            for (int x = 0; x < vecinosUbicacion.size(); x++)
             {
-                vecinosString += "puerto";
-                vecinosString += to_string(puertos[vecinosUbicacion[i][0]][vecinosUbicacion[i][1]]);
+                vecinosString += "p";
+                vecinosString += to_string(puertos[vecinosUbicacion[x][0]][vecinosUbicacion[x][1]]);
             }
             //Se envia la info a cada cliente
 			request request;
@@ -91,7 +92,7 @@ void mandarVecinos(vector<vector<int>> &matrix, vector<vector<int>> &puertos)
 }
 
 
-void server_accept_conns(int s, vector<int>& sockets, vector<vector<int>> &matrix, sem_t& semaforo)
+void server_accept_conns(int s, vector<int>& sockets, sem_t& semaforo)
 {
 	for (size_t i = 0; i < 3;i++)
 	{
@@ -100,17 +101,6 @@ void server_accept_conns(int s, vector<int>& sockets, vector<vector<int>> &matri
             accept_conns(s, ref(sockets), semaforo);
         }
 	}  
-    if(sockets.size() == 9){
-        int contador = 0;
-        for (size_t i = 0; i < 3;i++)
-        {
-            for (size_t j = 0; j < 3;j++)
-            {
-                matrix[i][j] = sockets[contador];
-                contador++;
-            }
-        }  
-    }
 }
 
 int main(int argc, char* argv[])
@@ -124,11 +114,35 @@ int main(int argc, char* argv[])
     sem_t semaforo;
 	sem_init(&semaforo, 0, 0);
 
-    s = set_acc_socket(PORT);
+    struct sockaddr_in local;
 
-    threads.push_back(thread(server_accept_conns, s, ref(sockets), ref(matrix), ref(semaforo)));
+    s = set_acc_socket(PORT, local);
 
-   if(matrix.size() == 9){
+    cout << "Comenzo la conexion con clientes" << endl;
+
+    threads.push_back(thread(server_accept_conns, s, ref(sockets), ref(semaforo)));
+
+    for (size_t i = 0;  i < 9; i++)
+	{
+		sem_wait(&semaforo);
+	}
+
+    cout << "Termino la conexion con clientes" << endl;
+
+    sleep(5);
+
+   if(sockets.size() == 9){
+        int contador = 0;
+        for (size_t i = 0; i < 3;i++)
+        {
+            for (size_t j = 0; j < 3;j++)
+            {
+                matrix[i][j] = sockets[contador];
+                contador++;
+            }
+        }  
+
+        cout << "Entro" << endl;
         for (size_t i = 0; i < 3; i++)
         {
             for (size_t j = 0; j < 3; j++)

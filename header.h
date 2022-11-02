@@ -26,7 +26,7 @@
 #include <iostream>
 #include <sstream>
 #include<string>
-#define PORT 5030
+#define PORT 5031
 #define MENSAJE_MAXIMO  256
 #define MAX_CLIENTS 10
 #define CLIENT_READY "CL_OK\n"
@@ -53,6 +53,6 @@ int read_sock(char str[], int s);
 void broadcast(vector<vector<int>> &sockets, struct request* req);
 void get_request(struct request* req, int s);
 void send_request(struct request* req, int socket);
-int set_acc_socket(int lsn_port);
+int set_acc_socket(int lsn_port, sockaddr_in& local);
 void accept_conns(int s, vector<int>& v, sem_t& semaforo);
-int connect_socket(int port);
+int conectarSocket(int port);	
