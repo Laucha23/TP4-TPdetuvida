@@ -1,8 +1,8 @@
 #include "header.h"
 using namespace std;
 
-// Sugerencia: El servidor va a necestiar varios threads. Recordar que peuden
-// compartir variables y que por lo tanto las herramientas de sincronziacion
+// Sugerencia: El servidor va a necesitar varios threads. Recordar que pueden
+// compartir variables y que por lo tanto las herramientas de sincronizacion
 // como semaforos son perfectamente validas.
 vector<vector<int>> ubicacionesVecinos{vector<int>{1, 1},
 vector<int>{0, 1},
@@ -17,7 +17,7 @@ vector<int>{-1, -1}};
 // Servicio draw: En cada tick, imprime el mapa con el estado de cada celula 
 void draw(vector<vector<int>> &matrix)
 {
-    cout << "Tablero: " << endl;
+    cout << "TABLERO: " << endl;
     string tablero = "";
 	for (size_t i = 0; i < 3; i++)
     {
@@ -46,7 +46,7 @@ void timer(vector<vector<int>> &matrix)
 	while (1)
 	{
 		draw(ref(matrix));
-		string tick = "Tiempo " + to_string(contador);
+		string tick = "TIEMPO: " + to_string(contador);
 		char tiempo[tick.length() + 1];
 		strcpy(tiempo, tick.c_str());
 		request request;

@@ -20,7 +20,7 @@ void cambiarEstado(int vecinosVivos)
 	cout << vecinosVivos << endl;
 	if (vivo && (vecinosVivos == 2 || vecinosVivos == 3)){
 		vivo = true;
-	}
+}
 	if (!vivo && vecinosVivos == 3){
 		vivo = true;
 	}
@@ -44,6 +44,7 @@ void aceptarConexiones(sockaddr_in address, vector<int> &escucharSocket)
 			perror("ERROR: conexión no aceptada");
 			exit(1);
 		}
+
 		escucharSocket.push_back(socket);
 		cout << socket << endl;
 	}
@@ -95,7 +96,7 @@ void getPuertosVecinos(string puertosVecinos, vector<int> &puertos)
 
 	string s;
 
-	while (std::getline(stringstream, s, 'p'))
+	while (std::getline(stringstream, s, '.'))
 	{
 		if (s != "")
 		{
@@ -106,6 +107,9 @@ void getPuertosVecinos(string puertosVecinos, vector<int> &puertos)
 
 int main(int argc, char* argv[]){
 	struct sockaddr_in local;
+	struct sockaddr_in remote;
+	struct hostent *hp;
+	struct in_addr addr;
 
     int clientePort = atoi(argv[1]);
     int server = conectarSocket(PORT);
@@ -162,7 +166,7 @@ int main(int argc, char* argv[]){
 			threads.push_back(thread(notificarVecinos, ref(hablarSocket)));
 			threads.push_back(thread(escucharVecinos, ref(escucharSocket), server));
 		}
-		if (strncmp(requestInfo.type, "VECINOS", 8) == 0)
+		if (strncmp(requestInfo.type, "VECINOS", 6) == 0)
 		{
 			getPuertosVecinos(string(requestInfo.msg), vecinos);
 			threads.push_back(thread(conectarVecinos, ref(hablarSocket)));

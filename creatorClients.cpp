@@ -13,12 +13,9 @@ int main(int argc, char const *argv[])
 
     srand(time(NULL));
 
-    int max = 7000;
-    int min = 1000;
-
     // Creación de los clientes minimos para iniciar el juego
     for (size_t i = 0; i < 9; i++){
-        threads.push_back(thread(client, (rand()% max + min)));
+        threads.push_back(thread(client, (rand()% 10000)));
     }
     for (unsigned int i = 0; i < 9; i++){
 		threads[i].join();
