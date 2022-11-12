@@ -1,12 +1,9 @@
 ## Observaciones
 
-Dejamos un archivo shell especificando los comandos a ejecutar para compilar las cosas. Despues basta con llamar a los archivos. 
-El codigo está armado para que corra en Linux. No llegamos a realizar todos los puntos pero lo intentamos. 
-Estamos teniendo un fallo con los ticks y la comunicación de los clientes, pero despues de eso hicimos bastantes cosas.
-No llegamos a hacer la grilla completa ni que los clientes se puedan comunicar entre ellos. 
-Lamentamos no haber podido consultar sobre este error en clase, pero siempre tenemos problemas para trabajar con las maquinas, y la verdad, en casa se trabaja mas tranquilo.
+Ahora funciona el programa. Para correrlo hay que hacer lo mismo que la otra vez. Esperamos llegar al 6 y AGUANTE BOCAAAAA.
 
-Saludos profe
+Saludos profe!
+
 ![one_piece_netflix](https://user-images.githubusercontent.com/80793147/199635774-ce51d876-2c8e-4b8f-a519-17720bcf4cd4.jpg)
 
 
